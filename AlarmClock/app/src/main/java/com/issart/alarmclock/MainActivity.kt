@@ -9,52 +9,45 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import androidx.appcompat.app.AppCompatActivity
+import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
 
 class MainActivity : AppCompatActivity() {
 
-//    private val serviceConnection = object : ServiceConnection {
-//        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-//
-//        }
-//
-//        override fun onServiceDisconnected(name: ComponentName?) {
-//
-//        }
-//    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        initAlarm()
+        choseTimeAlarm.setOnClickListener {
+            choseTime()//пока просто пусть звенит через пять секунд после нажатия
+        }
     }
 
-    private fun initAlarm() {
-        val intent = Intent(applicationContext, AlarmService::class.java)
+    private fun choseTime() {
+        //open chose time
+        val time = System.currentTimeMillis() + 5000
 
-//        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+        setAlarm(time)
+    }
+
+    private fun setAlarm(time: Long) {
+        val intent = Intent(applicationContext, AlarmReceiver::class.java)
+
         val manager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager
 
         val calendar = Calendar.getInstance()
-        calendar.timeInMillis = System.currentTimeMillis()
-        calendar.add(Calendar.SECOND, 5)
+        calendar.timeInMillis = time
 
-        val time = calendar.timeInMillis
-
-        val pendingIntent = PendingIntent.getService(
+        val pendingIntent = PendingIntent.getBroadcast(
             applicationContext, 1, intent, 0
         )
 
-        manager?.setRepeating(AlarmManager.RTC_WAKEUP, time, 2, pendingIntent)
-
-//        startService(intent)
+        manager?.set(AlarmManager.RTC_WAKEUP, time, pendingIntent)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-//        unbindService(serviceConnection)
 
     }
 }
