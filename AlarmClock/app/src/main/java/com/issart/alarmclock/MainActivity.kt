@@ -2,15 +2,16 @@ package com.issart.alarmclock
 
 import android.app.AlarmManager
 import android.app.PendingIntent
-import android.content.ComponentName
+import android.app.TimePickerDialog
+import android.app.TimePickerDialog.OnTimeSetListener
 import android.content.Context
 import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
+import android.os.SystemClock
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 
 class MainActivity : AppCompatActivity() {
@@ -20,34 +21,50 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         choseTimeAlarm.setOnClickListener {
-            choseTime()//пока просто пусть звенит через пять секунд после нажатия
+            choseTime()
         }
     }
 
     private fun choseTime() {
-        //open chose time
-        val time = System.currentTimeMillis() + 5000
+        val calendar = Calendar.getInstance()
 
-        setAlarm(time)
+        val timePickerDialog = TimePickerDialog(this, onTimeSetListener,
+                calendar[Calendar.HOUR_OF_DAY],
+                calendar[Calendar.MINUTE], true)
+        timePickerDialog.setTitle("Выберите время")
+        timePickerDialog.show()
     }
 
-    private fun setAlarm(time: Long) {
+    private fun setAlarm(hour: Int, minute: Int) {
         val intent = Intent(applicationContext, AlarmReceiver::class.java)
 
         val manager = getSystemService(Context.ALARM_SERVICE) as? AlarmManager
 
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = time
+        val calNow = Calendar.getInstance()
+        val calSet = Calendar.getInstance()
+        calSet[Calendar.HOUR_OF_DAY] = hour
+        calSet[Calendar.MINUTE] = minute
+        calSet[Calendar.SECOND] = 0
+        calSet[Calendar.MILLISECOND] = 0
+        if (calSet <= calNow) {
+            calSet.add(Calendar.DATE, 1)
+        }
 
         val pendingIntent = PendingIntent.getBroadcast(
-            applicationContext, 1, intent, 0
+                applicationContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT
         )
 
-        manager?.set(AlarmManager.RTC_WAKEUP, time, pendingIntent)
+        manager?.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calSet.timeInMillis,
+                TimeUnit.MINUTES.toMillis(1),
+                pendingIntent
+        )
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-
+    // Слушатель выбора времени
+    var onTimeSetListener = OnTimeSetListener { _, hour, minute ->
+        setAlarm(hour, minute)
     }
+
 }
